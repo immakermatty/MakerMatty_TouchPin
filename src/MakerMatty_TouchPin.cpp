@@ -91,8 +91,9 @@ uint8_t TouchPin::update(bool force_update)
 {
     int64_t current_time = esp_timer_get_time();
     uint16_t cycles_delta = (uint16_t)((current_time >> 14) - (updated_micros >> 14)); // (x >> 14) == (x / 16384)
+    uint8_t reading = readRaw8();
 
-    readings.value = (readings.value << 8) | readRaw8();
+    readings.value = (readings.value << 8) | reading;
 
     if ((readings.bytes[3] > readings.bytes[2] && readings.bytes[2] > readings.bytes[1] && readings.bytes[1] > readings.bytes[0])
         || (readings.bytes[3] <= readings.bytes[2] && readings.bytes[2] <= readings.bytes[1] && readings.bytes[1] <= readings.bytes[0])) {
@@ -158,7 +159,7 @@ uint8_t TouchPin::update(bool force_update)
 
     updated_micros = current_time;
 
-    return current;
+    return reading;
 }
 
 uint8_t TouchPin::getValue()

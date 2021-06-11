@@ -21,6 +21,8 @@ class TouchPinRaw {
 
 public:
     TouchPinRaw(touch_pad_t pad);
+    TouchPinRaw(const TouchPinRaw& other) = delete;
+    TouchPinRaw(TouchPinRaw&& other);
     ~TouchPinRaw();
 
     uint16_t readRaw();
@@ -42,6 +44,8 @@ class TouchPin : public TouchPinRaw {
 
 public:
     TouchPin(touch_pad_t pad, const uint16_t tap_ms, const uint16_t press_ms);
+    TouchPin(const TouchPin& other) = delete;
+    TouchPin(TouchPin&& other) = default;
 
     // called before any of the other functions
     // duration cca 185 us

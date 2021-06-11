@@ -10,6 +10,11 @@ TouchPinRaw::TouchPinRaw(touch_pad_t pad)
     : m_value(0)
     , m_pad(pad)
 {
+    if(m_pad >= TOUCH_PAD_MAX) {
+        log_e("Invalid pad number");
+        return;
+    }
+
     if (m_initializedFlags & (1 << m_pad)) {
         log_e("Pad is already active. This will cause problems");
         return;
@@ -37,6 +42,14 @@ TouchPinRaw::TouchPinRaw(touch_pad_t pad)
 
     // [default] slope = TOUCH_PAD_SLOPE_4, opt = TOUCH_PAD_TIE_OPT_LOW
     touch_pad_set_cnt_mode(m_pad, TOUCH_PAD_SLOPE_7, TOUCH_PAD_TIE_OPT_HIGH);
+}
+
+TouchPinRaw::TouchPinRaw(TouchPinRaw&& other)
+{
+    m_pad = other.m_pad;
+    other.m_pad = TOUCH_PAD_MAX;
+    m_value = other.m_value;
+    other.m_value = 0;
 }
 
 uint8_t TouchPinRaw::readRaw8()
@@ -71,16 +84,18 @@ touch_pad_t TouchPinRaw::getPad()
 
 TouchPinRaw::~TouchPinRaw()
 {
-    if (!(m_initializedFlags & (1 << m_pad))) {
-        log_e("Pad is already inactive. That shouldn't be.. Wierd");
-        return;
-    }
+    if (m_pad < TOUCH_PAD_MAX) {
+        if (!(m_initializedFlags & (1 << m_pad))) {
+            log_e("Pad is already inactive. That shouldn't be.. Wierd");
+            return;
+        }
 
-    m_initializedFlags &= ~(1UL << m_pad);
+        m_initializedFlags &= ~(1UL << m_pad);
 
-    if (!m_initializedFlags) {
-        log_d("uninstalling TouchPin driver");
-        touch_pad_deinit();
+        if (!m_initializedFlags) {
+            log_d("uninstalling TouchPin driver");
+            touch_pad_deinit();
+        }
     }
 }
 

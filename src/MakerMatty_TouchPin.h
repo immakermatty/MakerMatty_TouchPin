@@ -17,6 +17,13 @@
 
 class TouchPinRaw {
 
+    static bool m_initialized;
+
+    typedef void (*voidFuncPtr)(void);
+    static voidFuncPtr m_touchInterruptHandlers[TOUCH_PAD_MAX];
+    static intr_handle_t m_touchInterruptHandle;
+    static void IRAM_ATTR touchHandler(void* arg);
+
 public:
     TouchPinRaw(touch_pad_t pad);
     uint16_t readRaw();
@@ -25,10 +32,11 @@ public:
     void info();
     touch_pad_t getPin();
 
+    void attachInterrupt();
+
 private:
-    static bool initialized;
-    uint16_t value;
-    touch_pad_t pin;
+    uint16_t m_value;
+    touch_pad_t m_pad;
 };
 
 typedef TouchPinRaw MakerMatty_TouchPinRaw;

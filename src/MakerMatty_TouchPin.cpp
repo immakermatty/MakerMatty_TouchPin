@@ -76,6 +76,8 @@ TouchPinRaw::TouchPinRaw(touch_pad_t pad)
     
     touch_pad_io_init(m_pad);
 
+    touch_pad_config(m_pad, 0); // set initial treshold for triggering interrupts to 0
+
     // [default] slope = TOUCH_PAD_SLOPE_4, opt = TOUCH_PAD_TIE_OPT_LOW
     touch_pad_set_cnt_mode(m_pad, TOUCH_PAD_SLOPE_7, TOUCH_PAD_TIE_OPT_HIGH);
 }
@@ -110,13 +112,14 @@ touch_pad_t TouchPinRaw::getPin()
     return m_pad;
 }
 
-void TouchPinRaw::attachInterrupt()
+void TouchPinRaw::attachInterrupt(isr , uint16_t treshold)
 {
 
+    touch_pad_clear_status();
     touch_pad_set_fsm_mode(TOUCH_FSM_MODE_TIMER);
 
-    touch_pad_config(m_pad, TOUCH_THRESH_NO_USE);
-    touch_pad_set_thresh();
+    
+  
 
 
     __touchInterruptHandlers[pad] = userFunc;

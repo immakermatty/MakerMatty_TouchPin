@@ -17,18 +17,21 @@
 
 class TouchPinRaw {
 
+    static uint32_t m_initializedFlags;
+
 public:
     TouchPinRaw(touch_pad_t pad);
+    ~TouchPinRaw();
+
     uint16_t readRaw();
     uint8_t readRaw8();
 
     void info();
-    touch_pad_t getPin();
+    touch_pad_t getPad();
 
 private:
-    static bool initialized;
-    uint16_t value;
-    touch_pad_t pin;
+    uint16_t m_value;
+    touch_pad_t m_pad;
 };
 
 typedef TouchPinRaw MakerMatty_TouchPinRaw;

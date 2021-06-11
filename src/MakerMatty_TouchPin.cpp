@@ -4,15 +4,19 @@
 
 ///////////////////////////////////////////////////////////////////////////////////////////////
 
-bool TouchPinRaw::initialized(false);
+uint32_t TouchPinRaw::m_initializedFlags(0x00);
 
-TouchPinRaw::TouchPinRaw(touch_pad_t p)
-    : value(0)
-    , pin(p)
+TouchPinRaw::TouchPinRaw(touch_pad_t pad)
+    : m_value(0)
+    , m_pad(pad)
 {
-    if (!initialized) {
-        initialized = true;
+    if (m_initializedFlags & (1 << m_pad)) {
+        log_e("Pad is already active. This will cause problems");
+        return;
+    }
 
+    if (!m_initializedFlags) {
+        log_d("installing TouchPin driver");
         // Initialize touch pad peripheral.
         // The default fsm mode is software trigger mode.
         touch_pad_init();
@@ -26,40 +30,58 @@ TouchPinRaw::TouchPinRaw(touch_pad_t p)
         // [default] sleep_cycle = 4096, meas_cycle = 32767
         touch_pad_set_meas_time(0, 1024);
     }
-    touch_pad_io_init(pin);
+
+    // init touch pad
+    touch_pad_io_init(m_pad);
+    m_initializedFlags |= (1 << m_pad);
 
     // [default] slope = TOUCH_PAD_SLOPE_4, opt = TOUCH_PAD_TIE_OPT_LOW
-    touch_pad_set_cnt_mode(pin, TOUCH_PAD_SLOPE_7, TOUCH_PAD_TIE_OPT_HIGH);
+    touch_pad_set_cnt_mode(m_pad, TOUCH_PAD_SLOPE_7, TOUCH_PAD_TIE_OPT_HIGH);
 }
 
 uint8_t TouchPinRaw::readRaw8()
 {
-    touch_pad_read(pin, &value);
-    return value > 255 ? 255 : value;
+    touch_pad_read(m_pad, &m_value);
+    return m_value > 255 ? 255 : m_value;
 }
 
 uint16_t TouchPinRaw::readRaw()
 {
-    touch_pad_read(pin, &value);
-    return value;
+    touch_pad_read(m_pad, &m_value);
+    return m_value;
 }
 
 void TouchPinRaw::info()
 {
     touch_cnt_slope_t slope;
     touch_tie_opt_t opt;
-    touch_pad_get_cnt_mode(pin, &slope, &opt);
-    Serial.printf("[touch_pad %u] slope = %u, opt = %u\n", (uint8_t)pin, (uint8_t)slope, (uint8_t)opt);
+    touch_pad_get_cnt_mode(m_pad, &slope, &opt);
+    Serial.printf("[touch_pad %u] slope = %u, opt = %u\n", (uint8_t)m_pad, (uint8_t)slope, (uint8_t)opt);
 
     uint16_t sleep_cycle;
     uint16_t meas_cycle;
     touch_pad_get_meas_time(&sleep_cycle, &meas_cycle);
-    Serial.printf("[touch_pad %u] sleep_cycle = %u, meas_cycle = %u\n", (uint8_t)pin, sleep_cycle, meas_cycle);
+    Serial.printf("[touch_pad %u] sleep_cycle = %u, meas_cycle = %u\n", (uint8_t)m_pad, sleep_cycle, meas_cycle);
 }
 
-touch_pad_t TouchPinRaw::getPin()
+touch_pad_t TouchPinRaw::getPad()
 {
-    return pin;
+    return m_pad;
+}
+
+TouchPinRaw::~TouchPinRaw()
+{
+    if (!(m_initializedFlags & (1 << m_pad))) {
+        log_e("Pad is already inactive. That shouldn't be.. Wierd");
+        return;
+    }
+
+    m_initializedFlags &= ~(1UL << m_pad);
+
+    if (!m_initializedFlags) {
+        log_d("uninstalling TouchPin driver");
+        touch_pad_deinit();
+    }
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////

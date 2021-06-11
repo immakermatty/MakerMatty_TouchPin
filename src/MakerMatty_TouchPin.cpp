@@ -10,7 +10,9 @@ TouchPinRaw::TouchPinRaw(touch_pad_t pad)
     : m_value(0)
     , m_pad(pad)
 {
-    if(m_pad >= TOUCH_PAD_MAX) {
+    log_v("Contructing TouchPinRaw");
+
+    if (m_pad >= TOUCH_PAD_MAX) {
         log_e("Invalid pad number");
         return;
     }
@@ -84,6 +86,8 @@ touch_pad_t TouchPinRaw::getPad()
 
 TouchPinRaw::~TouchPinRaw()
 {
+    log_v("Destroying TouchPinRaw");
+
     if (m_pad < TOUCH_PAD_MAX) {
         if (!(m_initializedFlags & (1 << m_pad))) {
             log_e("Pad is already inactive. That shouldn't be.. Wierd");

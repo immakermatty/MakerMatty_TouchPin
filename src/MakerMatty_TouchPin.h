@@ -43,14 +43,14 @@ typedef TouchPinRaw MakerMatty_TouchPinRaw;
 class TouchPin : public TouchPinRaw {
 
 public:
-    TouchPin(touch_pad_t pad, const uint16_t tap_ms, const uint16_t press_ms);
+    TouchPin(const touch_pad_t pad, const uint16_t tap_ms, const uint16_t press_ms, const uint8_t knock_count);
     TouchPin(const TouchPin& other) = delete;
     TouchPin(TouchPin&& other) = default;
 
     // called before any of the other functions
     // duration cca 185 us
     // returns current read, that was updated
-    uint8_t update(bool force_update = false);
+    uint8_t update(const bool force_update = false);
 
     // get the processed value of touchpin
     uint8_t getValue();
@@ -64,18 +64,22 @@ public:
 
     bool contacted();
     bool released();
+    
     bool tapped();
     bool pressed();
+    bool knocked();
 
 private:
     uint16_t counter;
     uint8_t maximum;
     uint8_t treshold;
     uint8_t current;
+    uint16_t knock_counter;
+    uint8_t knock_count;
 
-    const uint32_t tap_us;
-    const uint32_t press_us;
-
+    uint32_t tap_us;
+    uint32_t press_us;
+   
     union {
         uint8_t bytes[8];
         uint64_t value;
@@ -93,6 +97,7 @@ private:
     bool touch;
     bool tap;
     bool press, press_;
+    bool knock;
 };
 
 typedef TouchPin MakerMatty_TouchPin;

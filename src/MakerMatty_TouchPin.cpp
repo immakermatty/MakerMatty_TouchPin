@@ -105,12 +105,14 @@ TouchPinRaw::~TouchPinRaw()
 
 ///////////////////////////////////////////////////////////////////////////////////////////////
 
-TouchPin::TouchPin(touch_pad_t pad, const uint16_t tap_ms, const uint16_t press_ms)
+TouchPin::TouchPin(const touch_pad_t pad, const uint16_t tap_ms, const uint16_t press_ms, const uint8_t knock_count)
     : TouchPinRaw(pad)
     , counter(0)
     , maximum(0)
     , treshold(0)
     , current(0)
+    , knock_counter(0)
+    , knock_count(knock_count)
     , tap_us(tap_ms * 1000)
     , press_us(press_ms * 1000)
     , history { .value = 0 }
@@ -125,10 +127,11 @@ TouchPin::TouchPin(touch_pad_t pad, const uint16_t tap_ms, const uint16_t press_
     , tap(false)
     , press(false)
     , press_(false)
+    , knock(false)
 {
 }
 
-uint8_t TouchPin::update(bool force_update)
+uint8_t TouchPin::update(const bool force_update)
 {
     int64_t current_time = esp_timer_get_time();
     uint16_t cycles_delta = (uint16_t)((current_time >> 14) - (updated_micros >> 14)); // (x >> 14) == (x / 16384)
@@ -172,24 +175,40 @@ uint8_t TouchPin::update(bool force_update)
 
     if (contact_ && !contact__) {
         contact__ = true;
-        contact_micros = current_time;
 
         press_ = false;
-
         contact = true;
+
+        const int64_t released_duration = current_time - contact_micros;
+
+        if (released_duration <= 500) {
+            knock_counter++;
+        } else {
+            knock_counter = 0;
+        }
+
+        contact_micros = current_time;
     }
 
     if (!contact_ && contact__) {
         contact__ = false;
-        contact_micros = current_time - contact_micros;
 
         touch = true;
-
         release = true;
 
-        if (contact_micros >= tap_us && contact_micros < press_us) {
+        const int64_t contacted_duration = current_time - contact_micros;
+
+        if (contacted_duration >= tap_us && contacted_duration < press_us && knock_counter == 0) {
             tap = true;
         }
+
+        if (knock_counter >= knock_count) {
+            knock_counter = 0;
+
+            knock = true;
+        }
+
+        contact_micros = current_time;
     }
 
     if (contact__ && !press_ && current_time - contact_micros >= press_us) {
@@ -257,6 +276,13 @@ bool TouchPin::pressed()
 {
     bool ret = press;
     press = false;
+    return ret;
+}
+
+bool TouchPin::knocked()
+{
+    bool ret = knock;
+    knock = false;
     return ret;
 }
 

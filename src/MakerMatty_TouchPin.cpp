@@ -179,10 +179,10 @@ uint8_t TouchPin::update(const bool force_update)
         press_ = false;
         contact = true;
 
-        const int64_t released_duration = current_time - contact_micros;
+        const int64_t released_duration_us = current_time - contact_micros;
 
-        if (released_duration <= 500) {
-            knock_counter++;
+        if (released_duration_us >= 1000 && released_duration_us < 500000) {
+            ++knock_counter;
         } else {
             knock_counter = 0;
         }
@@ -196,9 +196,9 @@ uint8_t TouchPin::update(const bool force_update)
         touch = true;
         release = true;
 
-        const int64_t contacted_duration = current_time - contact_micros;
+        const int64_t contacted_duration_us = current_time - contact_micros;
 
-        if (contacted_duration >= tap_us && contacted_duration < press_us && knock_counter == 0) {
+        if (knock_counter == 0 && contacted_duration_us >= tap_us && contacted_duration_us < press_us) {
             tap = true;
         }
 

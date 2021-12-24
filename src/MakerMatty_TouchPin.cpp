@@ -182,7 +182,7 @@ uint8_t TouchPin::update(const bool force_update)
         const int64_t released_duration_us = current_time - contact_micros;
 
         if (released_duration_us >= 10000) {
-            if (released_duration_us < 400000) {
+            if (released_duration_us < 300000) {
                 ++knock_counter;
             } else {
                 knock_counter = 0;

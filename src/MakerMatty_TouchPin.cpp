@@ -223,7 +223,7 @@ uint8_t TouchPin::update(const bool force_update, bool debug_print)
     updated_micros = current_time;
 
     if(debug_print) {
-        Serial.printf("reading=%u,current=%u,maximum=%u,delta=%u,contact_=%u\n", reading, current, maximum, delta, contact_);
+        Serial.printf("rea:%u,cur:%u,max:%u,del:%u,con:%u\n", reading, current, maximum, delta, contact_ * 10);
     }
 
     return reading;

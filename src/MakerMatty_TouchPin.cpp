@@ -113,8 +113,8 @@ TouchPin::TouchPin(const touch_pad_t pad, const uint16_t tap_ms, const uint16_t 
     , current(0)
     , knock_counter(0)
     , knock_count(knock_count)
-    , tap_us(tap_ms)
-    , press_us(press_ms)
+    , tap_ms(tap_ms)
+    , press_ms(press_ms)
     , history { .value = 0 }
     , readings { .value = 0 }
     , updated_millis(0)
@@ -137,7 +137,7 @@ uint8_t TouchPin::update(const bool force_update, bool debug_print)
 
     // 100 UPDATES PER SECOND
     if(current_millis - updated_millis < 10) {
-        return;
+        return history.bytes[0];
     }
 
     //uint16_t cycles_delta = (uint16_t)((current_millis >> 14) - (updated_millis >> 14)); // (x >> 14) == (x / 16384)
@@ -215,7 +215,7 @@ uint8_t TouchPin::update(const bool force_update, bool debug_print)
 
         const uint32_t contacted_duration = current_millis - contact_millis;
 
-        if (knock_counter == 0 && contacted_duration >= tap_us && contacted_duration < press_us) {
+        if (knock_counter == 0 && contacted_duration >= tap_ms && contacted_duration < press_ms) {
             tap = true;
         }
 
@@ -228,7 +228,7 @@ uint8_t TouchPin::update(const bool force_update, bool debug_print)
         contact_millis = current_millis;
     }
 
-    if (contact__ && !press_ && current_millis - contact_millis >= press_us) {
+    if (contact__ && !press_ && current_millis - contact_millis >= press_ms) {
         press_ = true;
 
         press = true;

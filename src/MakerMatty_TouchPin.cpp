@@ -153,10 +153,10 @@ uint8_t TouchPin::update(const bool force_update, bool debug_print)
             maximum -= (counter / 0xFF);
             counter %= 0xFF;
         }
+    }
 
-        if (current > maximum) {
-            maximum = current;
-        }
+    if (current > maximum) {
+        maximum = current;
     }
 
     uint8_t delta = maximum - current;

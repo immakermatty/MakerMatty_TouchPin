@@ -113,12 +113,12 @@ TouchPin::TouchPin(const touch_pad_t pad, const uint16_t tap_ms, const uint16_t 
     , current(0)
     , knock_counter(0)
     , knock_count(knock_count)
-    , tap_us(tap_ms * 1000)
-    , press_us(press_ms * 1000)
+    , tap_us(tap_ms)
+    , press_us(press_ms)
     , history { .value = 0 }
     , readings { .value = 0 }
-    , updated_micros(0)
-    , contact_micros(0)
+    , updated_millis(0)
+    , contact_millis(0)
     , contact(false)
     , contact_(false)
     , contact__(false)
@@ -133,9 +133,15 @@ TouchPin::TouchPin(const touch_pad_t pad, const uint16_t tap_ms, const uint16_t 
 
 uint8_t TouchPin::update(const bool force_update, bool debug_print)
 {
-    int64_t current_time = esp_timer_get_time();
-    uint16_t cycles_delta = (uint16_t)((current_time >> 14) - (updated_micros >> 14)); // (x >> 14) == (x / 16384)
-    uint8_t reading = readRaw8();
+    const uint32_t current_millis = millis();
+
+    // 100 UPDATES PER SECOND
+    if(current_millis - updated_millis < 10) {
+        return;
+    }
+
+    //uint16_t cycles_delta = (uint16_t)((current_millis >> 14) - (updated_millis >> 14)); // (x >> 14) == (x / 16384)
+    const uint8_t reading = readRaw8();
 
     readings.value = (readings.value << 8) | reading;
 
@@ -146,20 +152,28 @@ uint8_t TouchPin::update(const bool force_update, bool debug_print)
         current = history.bytes[0];
     }
 
-    if (cycles_delta > 0) {
-        history.value = (history.value << 8) | current;
+    history.value = (history.value << 8) | current;
 
-        if ((counter += cycles_delta) >= 0xFF) {
-            maximum -= (counter / 0xFF);
-            counter %= 0xFF;
-        }
+    if (counter++ >= 512) {
+        maximum -= (counter / 512);
+        counter %= 512;
     }
+
+
+    // if (cycles_delta > 0) {
+    //     history.value = (history.value << 8) | current;
+
+    //     if ((counter += cycles_delta) >= 0xFF) {
+    //         maximum -= (counter / 0xFF);
+    //         counter %= 0xFF;
+    //     }
+    // }
 
     if (current > maximum) {
         maximum = current;
     }
 
-    uint8_t delta = maximum - current;
+    const uint8_t delta = maximum - current;
 
     //if delta is bigger than maximum / 4 (25% of maximum), then it's touching and
     //if the value is under treshold and also dropped quickly (in 8 cycles)
@@ -180,17 +194,17 @@ uint8_t TouchPin::update(const bool force_update, bool debug_print)
         press_ = false;
         contact = true;
 
-        const int64_t released_duration_us = current_time - contact_micros;
+        const uint32_t released_duration = current_millis - contact_millis;
 
-        if (released_duration_us >= 10000) {
-            if (released_duration_us < 300000) {
+        if (released_duration >= 10) {
+            if (released_duration < 300) {
                 ++knock_counter;
             } else {
                 knock_counter = 0;
             }
         }
 
-        contact_micros = current_time;
+        contact_millis = current_millis;
     }
 
     if (!contact_ && contact__) {
@@ -199,9 +213,9 @@ uint8_t TouchPin::update(const bool force_update, bool debug_print)
         touch = true;
         release = true;
 
-        const int64_t contacted_duration_us = current_time - contact_micros;
+        const uint32_t contacted_duration = current_millis - contact_millis;
 
-        if (knock_counter == 0 && contacted_duration_us >= tap_us && contacted_duration_us < press_us) {
+        if (knock_counter == 0 && contacted_duration >= tap_us && contacted_duration < press_us) {
             tap = true;
         }
 
@@ -211,16 +225,16 @@ uint8_t TouchPin::update(const bool force_update, bool debug_print)
             knock = true;
         }
 
-        contact_micros = current_time;
+        contact_millis = current_millis;
     }
 
-    if (contact__ && !press_ && current_time - contact_micros >= press_us) {
+    if (contact__ && !press_ && current_millis - contact_millis >= press_us) {
         press_ = true;
 
         press = true;
     }
 
-    updated_micros = current_time;
+    updated_millis = current_millis;
 
     if(debug_print) {
         Serial.printf("rea:%u,cur:%u,max:%u,del:%u,con:%u\n", reading, current, maximum, delta, contact_ * 10);
@@ -242,7 +256,7 @@ uint8_t TouchPin::getMax()
 uint32_t TouchPin::touching()
 {
     if (contact_) {
-        return (uint32_t)((updated_micros - contact_micros) / (int64_t)1000);
+        return updated_millis - contact_millis;
     } else {
         return 0;
     }
@@ -252,7 +266,7 @@ uint32_t TouchPin::touched()
 {
     if (touch) {
         touch = false;
-        return (uint32_t)(contact_micros / (int64_t)1000);
+        return contact_millis;
     } else {
         return 0;
     }

@@ -77,8 +77,8 @@ private:
     uint16_t knock_counter;
     uint8_t knock_count;
 
-    uint32_t tap_us;
-    uint32_t press_us;
+    uint16_t tap_ms;
+    uint16_t press_ms;
    
     union {
         uint8_t bytes[8];
@@ -90,8 +90,8 @@ private:
         uint32_t value;
     } readings;
 
-    int64_t updated_micros;
-    int64_t contact_micros;
+    uint32_t updated_millis;
+    uint32_t contact_millis;
     bool contact, contact_, contact__;
     bool release;
     bool touch;

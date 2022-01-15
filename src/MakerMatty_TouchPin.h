@@ -50,7 +50,7 @@ public:
     // called before any of the other functions
     // duration cca 185 us
     // returns current read, that was updated
-    uint8_t update(const bool force_update = false);
+    uint8_t update(const bool force_update = false, bool debug_print = false);
 
     // get the processed value of touchpin
     uint8_t getValue();

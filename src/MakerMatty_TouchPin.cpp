@@ -131,7 +131,7 @@ TouchPin::TouchPin(const touch_pad_t pad, const uint16_t tap_ms, const uint16_t 
 {
 }
 
-uint8_t TouchPin::update(const bool force_update)
+uint8_t TouchPin::update(const bool force_update, bool debug_print)
 {
     int64_t current_time = esp_timer_get_time();
     uint16_t cycles_delta = (uint16_t)((current_time >> 14) - (updated_micros >> 14)); // (x >> 14) == (x / 16384)
@@ -161,13 +161,14 @@ uint8_t TouchPin::update(const bool force_update)
 
     uint8_t delta = maximum - current;
 
-    //if delta is bigger than maximum / 16 (7% of maximum), then it's touching and
+    //if delta is bigger than maximum / 4 (25% of maximum), then it's touching and
     //if the value is under treshold and also dropped quickly (in 8 cycles)
-    if (delta > (maximum >> 3) + 1) {
+    if (delta > (maximum >> 2) + 1) {
         if (((int16_t)history.bytes[7] - (int16_t)history.bytes[0]) > (int16_t)(maximum >> 3)) {
             contact_ = true;
         }
     } else {
+        // maximum / 16 (6.25% of maximum)
         if (delta <= (maximum >> 4)) {
             contact_ = false;
         }
@@ -220,6 +221,10 @@ uint8_t TouchPin::update(const bool force_update)
     }
 
     updated_micros = current_time;
+
+    if(debug_print) {
+        Serial.printf("reading=%u,current=%u,maximum=%u,delta=%u,contact_=%u\n", reading, current, maximum, delta, contact_);
+    }
 
     return reading;
 }

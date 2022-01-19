@@ -178,12 +178,12 @@ uint8_t TouchPin::update(const bool force_update, bool debug_print)
     //if delta is bigger than maximum / 4 (25% of maximum), then it's touching and
     //if the value is under treshold and also dropped quickly (in 8 cycles)
     if (delta > (maximum >> 2) + 1) {
-        if (((int16_t)history.bytes[7] - (int16_t)history.bytes[0]) > (int16_t)(maximum >> 3)) {
+        if (((int16_t)history.bytes[7] - (int16_t)history.bytes[0]) > (int16_t)(maximum >> 4)) {
             contact_ = true;
         }
     } else {
-        // maximum / 16 (6.25% of maximum)
-        if (delta <= (maximum >> 4)) {
+        // maximum / 8 (12.5% of maximum)
+        if (delta <= (maximum >> 3)) {
             contact_ = false;
         }
     }

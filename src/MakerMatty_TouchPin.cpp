@@ -134,14 +134,12 @@ TouchPin::TouchPin(const touch_pad_t pad, const uint16_t tap_ms, const uint16_t 
 uint8_t TouchPin::update(const bool force_update, bool debug_print)
 {
     const uint32_t current_millis = millis();
-
-    // 100 UPDATES PER SECOND
-    if(current_millis - updated_millis < 10) {
-        return history.bytes[0];
-    }
-
-    //uint16_t cycles_delta = (uint16_t)((current_millis >> 14) - (updated_millis >> 14)); // (x >> 14) == (x / 16384)
     const uint8_t reading = readRaw8();
+
+    // TARGETTING 100 UPDATES PER SECOND
+    if(current_millis - updated_millis < 10) {
+        return reading;
+    }
 
     readings.value = (readings.value << 8) | reading;
 
@@ -154,20 +152,10 @@ uint8_t TouchPin::update(const bool force_update, bool debug_print)
 
     history.value = (history.value << 8) | current;
 
-    if (counter++ >= 512) {
-        maximum -= (counter / 512);
-        counter %= 512;
+    if (counter++ >= 256) {
+        maximum -= (counter / 256);
+        counter %= 256;
     }
-
-
-    // if (cycles_delta > 0) {
-    //     history.value = (history.value << 8) | current;
-
-    //     if ((counter += cycles_delta) >= 0xFF) {
-    //         maximum -= (counter / 0xFF);
-    //         counter %= 0xFF;
-    //     }
-    // }
 
     if (current > maximum) {
         maximum = current;
@@ -175,10 +163,10 @@ uint8_t TouchPin::update(const bool force_update, bool debug_print)
 
     const uint8_t delta = maximum - current;
 
-    //if delta is bigger than maximum / 4 (25% of maximum), then it's touching and
+    //if delta is bigger than maximum / 2 (50% of maximum), then it's touching and
     //if the value is under treshold and also dropped quickly (in 8 cycles)
-    if (delta > (maximum >> 2) + 1) {
-        if (((int16_t)history.bytes[7] - (int16_t)history.bytes[0]) > (int16_t)(maximum >> 4)) {
+    if (delta > (maximum >> 1) + 1) {
+        if (((int16_t)history.bytes[7] - (int16_t)history.bytes[0]) > (int16_t)(maximum >> 3)) {
             contact_ = true;
         }
     } else {

@@ -10,6 +10,9 @@
 
 #include <Arduino.h>
 
+// #include "hal/touch_sensor_hal.h"
+#include "driver/touch_sensor.h"
+
 #include "MakerMatty_Curves.h"
 #include "MakerMatty_TemplateMath.h"
 

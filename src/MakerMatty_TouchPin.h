@@ -10,9 +10,7 @@
 
 #include <Arduino.h>
 
-#ifdef CONFIG_PLATFORM_0_3_X
-#include "hal/touch_sensor_hal.h"
-#else
+#ifndef CONFIG_PLATFORM_0_3_X
 #include "driver/touch_sensor.h"
 #endif
 

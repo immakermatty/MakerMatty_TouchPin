@@ -10,8 +10,11 @@
 
 #include <Arduino.h>
 
-// #include "hal/touch_sensor_hal.h"
+#ifdef CONFIG_PLATFORM_0_3_X
+#include "hal/touch_sensor_hal.h"
+#else
 #include "driver/touch_sensor.h"
+#endif
 
 #include "MakerMatty_Curves.h"
 #include "MakerMatty_TemplateMath.h"

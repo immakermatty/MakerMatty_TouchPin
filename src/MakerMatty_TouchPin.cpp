@@ -35,7 +35,7 @@ TouchPinRaw::TouchPinRaw(touch_pad_t pad)
         touch_pad_set_voltage(TOUCH_HVOLT_2V7, TOUCH_LVOLT_0V5, TOUCH_HVOLT_ATTEN_1V);
 
         // [default] sleep_cycle = 4096, meas_cycle = 32767
-        touch_pad_set_meas_time(0, 1024);
+        touch_pad_set_meas_time(0, 2048);
     }
 
     // init touch pad
@@ -143,7 +143,7 @@ uint8_t TouchPin::update(const bool force_update, bool debug_print)
 
     readings.value = (readings.value << 8) | reading;
 
-    if ((readings.bytes[3] > readings.bytes[2] && readings.bytes[2] > readings.bytes[1] && readings.bytes[1] > readings.bytes[0])
+    if ((readings.bytes[3] >= readings.bytes[2] && readings.bytes[2] >= readings.bytes[1] && readings.bytes[1] >= readings.bytes[0])
         || (readings.bytes[3] <= readings.bytes[2] && readings.bytes[2] <= readings.bytes[1] && readings.bytes[1] <= readings.bytes[0])) {
         current = readings.bytes[0];
     } else {

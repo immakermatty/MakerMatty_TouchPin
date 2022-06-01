@@ -32,10 +32,10 @@ TouchPinRaw::TouchPinRaw(touch_pad_t pad)
         // In this case, the high reference valtage will be 2.7V - 1V = 1.7V
         // The low reference voltage will be 0.5
         // The larger the range, the larger the pulse count value.
-        touch_pad_set_voltage(TOUCH_HVOLT_2V7, TOUCH_LVOLT_0V5, TOUCH_HVOLT_ATTEN_1V);
+        touch_pad_set_voltage(TOUCH_HVOLT_2V4, TOUCH_LVOLT_0V5, TOUCH_HVOLT_ATTEN_1V5);
 
         // [default] sleep_cycle = 4096, meas_cycle = 32767
-        touch_pad_set_meas_time(0, 2048);
+        touch_pad_set_meas_time(0, 1024);
     }
 
     // init touch pad
@@ -108,10 +108,10 @@ TouchPinRaw::~TouchPinRaw()
 TouchPin::TouchPin(const touch_pad_t pad, const uint16_t tap_ms, const uint16_t press_ms, const uint8_t knock_count)
     : TouchPinRaw(pad)
     , counter(0)
+    , knock_counter(0)
     , maximum(0)
     , treshold(0)
     , current(0)
-    , knock_counter(0)
     , knock_count(knock_count)
     , tap_ms(tap_ms)
     , press_ms(press_ms)
@@ -119,6 +119,8 @@ TouchPin::TouchPin(const touch_pad_t pad, const uint16_t tap_ms, const uint16_t 
     , readings { .value = 0 }
     , updated_millis(0)
     , contact_millis(0)
+    , reading(4, 0)
+    , average(8192, 128)
     , contact(false)
     , contact_(false)
     , contact__(false)
@@ -129,19 +131,23 @@ TouchPin::TouchPin(const touch_pad_t pad, const uint16_t tap_ms, const uint16_t 
     , press_(false)
     , knock(false)
 {
+    average.setValue(readRaw8());
 }
 
-uint8_t TouchPin::update(const bool force_update, bool debug_print)
+uint8_t TouchPin::update(const bool force_update, const bool skip_read, bool debug_print)
 {
     const uint32_t current_millis = millis();
-    const uint8_t reading = readRaw8();
 
     // TARGETTING 100 UPDATES PER SECOND
-    if(current_millis - updated_millis < 10) {
-        return reading;
+    if (!force_update && current_millis - updated_millis < 10) {
+        return history.bytes[0];
     }
 
-    readings.value = (readings.value << 8) | reading;
+    if (skip_read) {
+        readings.value = (readings.value << 8) | history.bytes[0];
+    } else {
+        readings.value = (readings.value << 8) | reading.update(readRaw8());
+    }
 
     if ((readings.bytes[3] >= readings.bytes[2] && readings.bytes[2] >= readings.bytes[1] && readings.bytes[1] >= readings.bytes[0])
         || (readings.bytes[3] <= readings.bytes[2] && readings.bytes[2] <= readings.bytes[1] && readings.bytes[1] <= readings.bytes[0])) {
@@ -152,10 +158,12 @@ uint8_t TouchPin::update(const bool force_update, bool debug_print)
 
     history.value = (history.value << 8) | current;
 
-    if (counter++ >= 256) {
-        maximum -= (counter / 256);
-        counter %= 256;
-    }
+    // if (counter++ >= 256) {
+    //     maximum -= (counter / 256);
+    //     counter %= 256;
+    // }
+
+    maximum = uint8_t(average.update(current));
 
     if (current > maximum) {
         maximum = current;
@@ -163,15 +171,15 @@ uint8_t TouchPin::update(const bool force_update, bool debug_print)
 
     const uint8_t delta = maximum - current;
 
-    //if delta is bigger than maximum / 2 (50% of maximum), then it's touching and
-    //if the value is under treshold and also dropped quickly (in 8 cycles)
+    // if delta is bigger than maximum / 2 (50% of maximum), then it's touching and
+    // if the value is under treshold and also dropped quickly (in 8 cycles)
     if (delta > (maximum >> 1) + 1) {
-        if (((int16_t)history.bytes[7] - (int16_t)history.bytes[0]) > (int16_t)(maximum >> 3)) {
+        if ((int32_t(history.bytes[7]) - int32_t(history.bytes[0])) >= int32_t(maximum) >> 2) {
             contact_ = true;
         }
     } else {
-        // maximum / 8 (12.5% of maximum)
-        if (delta <= (maximum >> 3)) {
+        // maximum / 4 (25% of maximum)
+        if (delta <= (maximum >> 2)) {
             contact_ = false;
         }
     }
@@ -225,10 +233,10 @@ uint8_t TouchPin::update(const bool force_update, bool debug_print)
     updated_millis = current_millis;
 
     if(debug_print) {
-        Serial.printf("rea:%u,cur:%u,max:%u,del:%u,con:%u\n", reading, current, maximum, delta, contact_ * 10);
+        Serial.printf("rea:%u,cur:%u,max:%u,del:%u,con:%u,avg:%.3f\n", reading.getValue(), current, maximum, delta, contact_ * 10, average.getValue());
     }
 
-    return reading;
+    return reading.getValue();
 }
 
 uint8_t TouchPin::getValue()
@@ -236,9 +244,9 @@ uint8_t TouchPin::getValue()
     return current;
 }
 
-uint8_t TouchPin::getMax()
+uint8_t TouchPin::getAverage()
 {
-    return maximum;
+    return uint8_t(average.getValue());
 }
 
 uint32_t TouchPin::touching()

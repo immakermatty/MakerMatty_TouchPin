@@ -104,7 +104,7 @@ private:
     bool contact, contact_, contact__;
     bool release;
     bool touch;
-    bool tap;
+    bool tap, tap_;
     bool press, press_;
     bool knock;
 };

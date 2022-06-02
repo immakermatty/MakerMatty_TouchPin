@@ -127,6 +127,7 @@ TouchPin::TouchPin(const touch_pad_t pad, const uint16_t tap_ms, const uint16_t 
     , release(false)
     , touch(false)
     , tap(false)
+    , tap_(false)
     , press(false)
     , press_(false)
     , knock(false)
@@ -188,13 +189,14 @@ uint8_t TouchPin::update(const bool force_update, const bool skip_read, bool deb
         contact__ = true;
 
         press_ = false;
+        tap_ = false;
         contact = true;
 
         const uint32_t released_duration = current_millis - contact_millis;
 
         if (released_duration >= 10) {
             if (released_duration < 300) {
-                ++knock_counter;
+                knock_counter++;
             } else {
                 knock_counter = 0;
             }
@@ -212,7 +214,7 @@ uint8_t TouchPin::update(const bool force_update, const bool skip_read, bool deb
         const uint32_t contacted_duration = current_millis - contact_millis;
 
         if (knock_counter == 0 && contacted_duration >= tap_ms && contacted_duration < press_ms) {
-            tap = true;
+            tap_ = true;
         }
 
         if (knock_counter >= knock_count) {
@@ -230,10 +232,16 @@ uint8_t TouchPin::update(const bool force_update, const bool skip_read, bool deb
         press = true;
     }
 
+    if (!contact_ && tap_ && current_millis - contact_millis >= 300) {
+        tap_ = false;
+
+        tap = true;
+    }
+
     updated_millis = current_millis;
 
-    if(debug_print) {
-        Serial.printf("rea:%u,cur:%u,max:%u,del:%u,con:%u,avg:%.3f\n", reading.getValue(), current, maximum, delta, contact_ * 10, average.getValue());
+    if (debug_print) {
+        Serial.printf("rea:%u,cur:%u,max:%u,del:%u,con:%u,avg:%.3f,ski:%u\n", reading.getValue(), current, maximum, delta, contact_ * 10, average.getValue(), skip_read * 8);
     }
 
     return reading.getValue();

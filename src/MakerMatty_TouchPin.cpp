@@ -144,13 +144,11 @@ uint8_t TouchPin::update(const bool force_update, const bool skip_read, bool deb
         return history.bytes[0];
     }
 
-    if (skip_read) {
-        readings.value = (readings.value << 8) | history.bytes[0];
-    } else {
+    if (!skip_read) {
         readings.value = (readings.value << 8) | reading.update(readRaw8());
     }
 
-    if ((readings.bytes[3] >= readings.bytes[2] && readings.bytes[2] >= readings.bytes[1] && readings.bytes[1] >= readings.bytes[0])
+    if ((readings.bytes[3] > readings.bytes[2] && readings.bytes[2] > readings.bytes[1] && readings.bytes[1] > readings.bytes[0])
         || (readings.bytes[3] <= readings.bytes[2] && readings.bytes[2] <= readings.bytes[1] && readings.bytes[1] <= readings.bytes[0])) {
         current = readings.bytes[0];
     } else {
@@ -241,7 +239,7 @@ uint8_t TouchPin::update(const bool force_update, const bool skip_read, bool deb
     updated_millis = current_millis;
 
     if (debug_print) {
-        Serial.printf("rea:%u,cur:%u,max:%u,del:%u,con:%u,avg:%.3f,ski:%u\n", reading.getValue(), current, maximum, delta, contact_ * 10, average.getValue(), skip_read * 8);
+        Serial.printf("r:%u,c:%u,m:%u,d:%u,c:%u,a:%.3f,s:%u\n", reading.getValue(), current, maximum, delta, contact_ * 10, average.getValue(), skip_read * 8);
     }
 
     return reading.getValue();
